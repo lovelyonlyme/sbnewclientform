@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"path": "../WebApp-TA-Application"
+		},
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"liveServer.settings.multiRootWorkspaceName": "Web-CRUD-NewClientForm"
+	}
+}

@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบจัดการข้อมูลลูกค้า</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        body {
+            font-family: 'Sarabun', sans-serif;
+        }
+        /* Add any custom styles here */
+    </style>
+</head>
+<body class="bg-gray-100">
+    <!-- Your HTML content here -->
+    <div class="container mx-auto p-4">
+        <h1 class="text-2xl font-bold mb-4">ระบบจัดการข้อมูลลูกค้า</h1>
+        
+        <!-- Table for displaying customers -->
+        <div class="overflow-hidden rounded-lg shadow-md mb-4">
+            <table class="min-w-full bg-white">
+                <thead class="bg-gray-800 text-white">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ชื่อ-นามสกุล</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">รหัสลูกค้า</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ชื่อผู้ติดต่อ</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ตัวแทน</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">รหัสพนักงาน</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">สถานะ</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">จัดการ</th>
+                        <th scope="col" class="relative px-6 py-3">
+                            <span class="sr-only">Edit</span>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody id="customerTableBody" class="bg-white divide-y divide-gray-200">
+                    <!-- Rows will be populated by JavaScript -->
+                </tbody>
+            </table>
+            <div id="noCustomers" class="hidden px-6 py-4 text-gray-500">
+                ยังไม่มีข้อมูลลูกค้า
+            </div>
+        </div>
+
+        <!-- Modal for customer form -->
+        <div id="customerModal" class="fixed inset-0 flex items-center justify-center z-50 hidden">
+            <div class="modal-overlay absolute inset-0 bg-gray-500 opacity-75"></div>
+            <div class="modal-container bg-white rounded-lg overflow-hidden shadow-lg max-w-lg w-full z-50">
+                <div class="modal-header p-4 border-b">
+                    <h2 class="text-lg font-semibold">ข้อมูลลูกค้า</h2>
+                    <button class="modal-close absolute top-0 right-0 mt-4 mr-4 text-gray-500 hover:text-gray-700">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="modal-content p-4">
+                    <form id="customerForm">
+                        <!-- Form fields for customer data -->
+                        <div class="grid grid-cols-1 gap-4">
+                            <div class="contact-section" id="default-contact">
+                                <label class="block text-sm font-medium text-gray-700">ชื่อผู้ติดต่อ</label>
+                                <input type="text" name="contactName" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring focus:ring-opacity-50" placeholder="กรุณากรอกชื่อผู้ติดต่อ">
+                            </div>
+                        </div>
+
+                        <!-- Hidden sections for additional contacts and work types -->
+                        <div id="additionalContacts" class="hidden">
+                            <!-- Additional contact sections will be injected here by JavaScript -->
+                        </div>
+                        <div id="workTypesContainer">
+                            <!-- ประเภทงาน 1 -->
+                            <div class="work-type-section mb-4 p-4 bg-gray-50 rounded-lg">
+                                <h5 class="font-medium text-gray-700 mb-3">ประเภทงาน 1</h5>
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">หัวข้อประเภทงาน</label>
+                                        <div class="relative">
+                                            <input type="text" name="หัวข้อประเภทงาน" placeholder="ค้นหาหัวข้อ..." class="topic-insurance-input w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                            <div class="topic-insurance-options absolute z-10 w-full bg-white border border-gray-300 rounded-lg mt-1 max-h-40 overflow-y-auto hidden">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">ประเภทงาน</label>
+                                        <div class="relative">
+                                            <input type="text" name="ประเภทงาน" placeholder="ค้นหาประเภท..." class="insurance-type-input w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                            <div class="insurance-type-options absolute z-10 w-full bg-white border border-gray-300 rounded-lg mt-1 max-h-40 overflow-y-auto hidden">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">รหัสประเภทงาน</label>
+                                        <input type="text" name="รหัสประเภทงาน" placeholder="เลือกประเภทงานก่อน" class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-100" readonly>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">ส่วนลดลูกค้า (%) ไม่มีส่วนลดใส่ 0</label>
+                                        <input type="number" min="0" max="100" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">ค่าคอมตัวแทน (%) ไม่มีตัวแทนใส่ 0</label>
+                                        <input type="number" min="0" max="100" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Customer code and sequence -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">รหัสลูกค้า</label>
+                                <input type="text" id="customerCode" name="customerCode" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring focus:ring-opacity-50" readonly>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">ลำดับที่</label>
+                                <input type="text" id="customerCodeSequence" name="customerCodeSequence" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring focus:ring-opacity-50" readonly>
+                            </div>
+                        </div>
+
+                        <!-- Customer type radio buttons -->
+                        <div class="mt-4">
+                            <span class="block text-sm font-medium text-gray-700">ประเภทลูกค้า</span>
+                            <div class="flex gap-4 mt-2">
+                                <label class="inline-flex items-center">
+                                    <input type="radio" name="customerType" value="personal" class="form-radio text-indigo-600" checked>
+                                    <span class="ml-2 text-gray-700">บุคคลทั่วไป</span>
+                                </label>
+                                <label class="inline-flex items-center">
+                                    <input type="radio" name="customerType" value="company" class="form-radio text-indigo-600">
+                                    <span class="ml-2 text-gray-700">นิติบุคคล</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Company and individual fields (hidden by default) -->
+                        <div id="companyFields" class="hidden">
+                            <div class="grid grid-cols-1 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">ชื่อบริษัท</label>
+                                    <input type="text" name="companyName" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring focus:ring-opacity-50" placeholder="กรุณากรอกชื่อบริษัท">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">หมายเลขประจำตัวผู้เสียภาษี</label>
+                                    <input type="text" name="taxId" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring focus:ring-opacity-50" placeholder="กรุณากรอกหมายเลขประจำตัวผู้เสียภาษี">
+                                </div>
+                            </div>
+                        </div>
+                        <div id="individualFields">
+                            <div class="grid grid-cols-1 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">ชื่อ</label>
+                                    <input type="text" name="firstName" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring focus:ring-opacity-50" placeholder="กรุณากรอกชื่อ">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">นามสกุล</label>
+                                    <input type="text" name="lastName" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring focus:ring-opacity-50" placeholder="กรุณากรอกนามสกุล">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">หมายเลขประจำตัวประชาชน</label>
+                                    <input type="text" name="idCard" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring focus:ring-opacity-50" placeholder="กรุณากรอกหมายเลขประจำตัวประชาชน">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Action buttons -->
+                        <div class="border-t p-4 flex justify-end space-x-3 bg-gray-50 rounded-b-lg">
+                            <button type="button" id="cancelBtn" class="modal-close px-4 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-100 transition-colors">
+                                ยกเลิก
+                            </button>
+                            <button type="submit" id="saveBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors">
+                                บันทึกข้อมูล
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- INITIALIZATION ---
+            const customerTableBody = document.getElementById('customerTableBody');
+            const noCustomers = document.getElementById('noCustomers');
+            const customerModal = document.getElementById('customerModal');
+            const modalCloseBtns = document.querySelectorAll('.modal-close');
+            const customerForm = document.getElementById('customerForm');
+
+            function closeModal() {
+                customerModal.classList.add('hidden');
+            }
+
+            function showLoadingSpinner(show) {
+                if (show) {
+                    // Show a spinner or loading indicator
+                    document.body.classList.add('loading');
+                } else {
+                    document.body.classList.remove('loading');
+                }
+            }
+
+            // --- DATA FETCHING ---
+            async function fetchCustomers() {
+                showLoadingSpinner(true);
+                try {
+                    // Simulate network request
+                    setTimeout(() => {
+                        // This is where you'd normally fetch data from an API
+                        // For this example, we'll use static data
+                        customers = [
+                            {
+                                "รหัส": "CUST-001",
+                                "ชื่อ": "สมชาย",
+                                "นามสกุล": "ใจดี",
+                                "ชื่อผู้ติดต่อ": "นายสมชาย",
+                                "ตัวแทน": "ตัวแทนที่ 1",
+                                "พนักงานผู้ดูแล": "พนักงาน 1",
+                                "status": "Approved"
+                            },
+                            {
+                                "รหัส": "CUST-002",
+                                "ชื่อ": "สุกัญญา",
+                                "นามสกุล": "มีสุข",
+                                "ชื่อผู้ติดต่อ": "นางสาวสุกัญญา",
+                                "ตัวแทน": "ตัวแทนที่ 2",
+                                "พนักงานผู้ดูแล": "พนักงาน 2",
+                                "status": "Pending"
+                            }
+                        ];
+                        renderCustomerTable();
+                        showLoadingSpinner(false);
+                    }, 1000);
+                } catch (error) {
+                    showError('ไม่สามารถดึงข้อมูลลูกค้าได้', error);
+                    showLoadingSpinner(false);
+                }
+            }
+
+            // --- EVENT LISTENERS ---
+            function setupEventListeners() {
+                modalCloseBtns.forEach(btn => btn.addEventListener('click', () => modal.classList.add('hidden')));
+                
+                customerForm.addEventListener('submit', handleFormSubmit);
+
+                document.getElementById('add-customer-btn').addEventListener('click', () => {
+                    customerForm.reset();
+                    // Reset contact sections
+                    document.querySelectorAll('.contact-section').forEach(section => section.classList.add('hidden'));
+                    document.getElementById('default-contact').classList.remove('hidden');
+
+                    // Reset work type sections
+                    document.querySelectorAll('.work-type-section').forEach(section => {
+                        section.querySelector('[name="หัวข้อประเภทงาน"]').value = '';
+                        section.querySelector('[name="ประเภทงาน"]').value = '';
+                        section.querySelector('[name="รหัสประเภทงาน"]').value = '';
+                        section.querySelector('[name="ส่วนลดลูกค้า (%)"]').value = '';
+                        section.querySelector('[name="ส่วนลดลูกค้า (บาท)"]').value = '';
+                        section.querySelector('[name="ค่าคอมตัวแทน (%)"]').value = '';
+                        section.querySelector('[name="ค่าคอมตัวแทน (บาท)"]').value = '';
+                    });
+
+                    // Reset customer code
+                    const codePrefix = document.getElementById('customerCode').value;
+                    const codeSequence = document.getElementById('customerCodeSequence').value;
+                    document.getElementById('customerCode').value = codePrefix;
+                    document.getElementById('customerCodeSequence').value = codeSequence;
+                });
+            }
+
+            async function handleFormSubmit(event) {
+                event.preventDefault();
+                console.log("Form submission triggered.");
+
+                // --- Data Collection ---
+                const formData = new FormData(customerForm);
+                const data = {};
+
+                // Simple key-value pairs from the form
+                for (let [key, value] of formData.entries()) {
+                    // This handles most named inputs
+                    if (data[key]) {
+                        if (!Array.isArray(data[key])) {
+                            data[key] = [data[key]];
+                        }
+                        data[key].push(value);
+                    } else {
+                        data[key] = value;
+                    }
+                }
+                
+                // Consolidate Customer Code
+                const codePrefix = document.getElementById('customerCode').value;
+                const codeSequence = document.getElementById('customerCodeSequence').value;
+                data['รหัส'] = `${codePrefix}-${codeSequence}`;
+
+                // Handle radio button for customer type
+                const customerTypeRadio = document.querySelector('input[name="customerType"]:checked');
+                data['ประเภท'] = customerTypeRadio ? customerTypeRadio.value : 'personal';
+
+                // Handle dynamic contacts (serializing to JSON for storage in a single cell)
+                const contacts = [];
+                document.querySelectorAll('.contact-section:not(.hidden)').forEach(section => {
+                    const contact = {
+                        name: section.querySelector('input[type="text"]').value, // Simple assumption
+                        // Add other contact fields here
+                    };
+                    contacts.push(contact);
+                });
+                data['ข้อมูลผู้ติดต่อ (JSON)'] = JSON.stringify(contacts);
+                // Also save primary contact for easy table display
+                data['ชื่อผู้ติดต่อ'] = contacts.length > 0 ? contacts[0].name : '';
+
+
+                // Handle dynamic work types (serializing to JSON)
+                const workTypes = [];
+                document.querySelectorAll('.work-type-section').forEach(section => {
+                    const workType = {
+                        topic: section.querySelector('[name="หัวข้อประเภทงาน"]').value,
+                        type: section.querySelector('[name="ประเภทงาน"]').value,
+                        code: section.querySelector('[name="รหัสประเภทงาน"]').value,
+                        discount_percent: section.querySelector('[name="ส่วนลดลูกค้า (%)"]').value,
+                        discount_baht: section.querySelector('[name="ส่วนลดลูกค้า (บาท)"]').value,
+                        commission_percent: section.querySelector('[name="ค่าคอมตัวแทน (%)"]').value,
+                        commission_baht: section.querySelector('[name="ค่าคอมตัวแทน (บาท)"]').value,
+                    };
+                    workTypes.push(workType);
+                });
+                data['ข้อมูลประเภทงาน (JSON)'] = JSON.stringify(workTypes);
+
+
+                // Add a timestamp for creation date
+                data['วันที่สร้าง'] = new Date().toISOString();
+                
+                console.log("Collected form data:", data);
+
+                try {
+                    await saveData('Customers', [data]); // saveData expects an array of objects
+                    alert('บันทึกข้อมูลลูกค้าสำเร็จ!');
+                    closeModal();
+                    await initializeApp(); // Refresh all data and tables
+                } catch (error) {
+                    showError('การบันทึกข้อมูลล้มเหลว โปรดลองอีกครั้ง', error);
+                }
+            }
+
+            async function handleCustomerTypeChange(event) {
+                const selectedType = event.target.value;
+                console.log("Customer type changed:", selectedType);
+
+                // Show/Hide sections based on customer type
+                if (selectedType === 'company') {
+                    document.getElementById('companyFields').classList.remove('hidden');
+                    document.getElementById('individualFields').classList.add('hidden');
+                } else {
+                    document.getElementById('companyFields').classList.add('hidden');
+                    document.getElementById('individualFields').classList.remove('hidden');
+                }
+
+                // Reset fields in the hidden section
+                document.querySelectorAll('#companyFields input, #companyFields select').forEach(input => {
+                    input.value = '';
+                });
+            }
+
+            // --- RENDER FUNCTIONS ---
+            function renderCustomerTable() {
+                if (!customerTableBody) return;
+
+                if (!customers || customers.length === 0) {
+                    noCustomers.classList.remove('hidden');
+                    customerTableBody.parentElement.classList.add('hidden');
+                    return;
+                }
+                noCustomers.classList.add('hidden');
+                customerTableBody.parentElement.classList.remove('hidden');
+
+                customerTableBody.innerHTML = '';
+                customers.forEach(customer => {
+                    const row = document.createElement('tr');
+                    row.dataset.customerId = customer['รหัส']; // Store customer ID on the row
+                    row.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">${customer['ชื่อ'] || ''} ${customer['นามสกุล'] || ''}</div>
+                            <div class="text-sm text-gray-500">${customer['รหัส'] || 'N/A'}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${customer['ชื่อผู้ติดต่อ'] || '-'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${customer['ตัวแทน'] || '-'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${customer['พนักงานผู้ดูแล'] || '-'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${customer.status === 'Approved' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">
+                                ${customer.status || 'Pending'}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <button class="pdf-btn text-red-600 hover:text-red-900" title="ดาวน์โหลด PDF">PDF</button>
+                            <button class="edit-btn text-indigo-600 hover:text-indigo-900 ml-4">แก้ไข</button>
+                            <button class="delete-btn text-gray-500 hover:text-gray-900 ml-4">ลบ</button>
+                        </td>
+                    `;
+                    customerTableBody.appendChild(row);
+                });
+            }
+
+            function renderApprovalTable() {
+                // Similar to renderCustomerTable, but for approvals
+            }
+
+            // --- PDF GENERATION ---
+            async function generateCustomerPdf(customerData) {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+
+                // This is a large file, so it's better to load it from a separate JS file in a real app
+                // For this example, it's embedded.
+                const sarabunBase64 = 'AAEAAAARAQAABAAQR0RFRg...'; // This would be the very long Base64 string for the font. I'll omit it for brevity but the logic is here.
+                
+                // Add the custom font
+                // doc.addFileToVFS("Sarabun-Regular.ttf", sarabunBase64);
+                // doc.addFont("Sarabun-Regular.ttf", "Sarabun", "normal");
+                // doc.setFont("Sarabun");
+                
+                // Since adding a real TTF is complex, we'll use a built-in as a placeholder.
+                // For real Thai support, the above lines with a correct Base64 font are needed.
+                // For now, this will show gibberish for Thai characters but demonstrates the structure.
+                doc.setFont("helvetica", "bold");
+                doc.setFontSize(18);
+                doc.text("Customer Details", 14, 22);
+                doc.setFontSize(11);
+                doc.setFont("helvetica", "normal");
+
+                let y = 35;
+                const addLine = (label, value) => {
+                    if (y > 280) { // Add new page if content overflows
+                        doc.addPage();
+                        y = 20;
+                    }
+                    doc.setFont("helvetica", "bold");
+                    doc.text(label, 14, y);
+                    doc.setFont("helvetica", "normal");
+                    doc.text(String(value || '-'), 70, y);
+                    y += 7;
+                };
+
+                addLine("Customer Code:", customerData["รหัส"]);
+                addLine("Customer Type:", customerData["ประเภท"]);
+                addLine("Customer Name:", `${customerData["คำนำหน้า"] || ''}${customerData["ชื่อ"] || ''} ${customerData["นามสกุล"] || ''}`);
+                addLine("Tax ID:", customerData["ID/TAX ID"]);
+                y += 5; // Add some space
+
+                // Addresses, Contacts, etc. would be added here in a similar fashion
+                // For repeating sections, use autoTable
+                
+                // Example for Contacts
+                if (customerData.contacts && customerData.contacts.length > 0) {
+                    doc.autoTable({
+                        startY: y,
+                        head: [['Contact Name', 'Phone', 'Mobile', 'Email']],
+                        body: customerData.contacts.map(c => [c.name, c.phone, c.mobile, c.email]),
+                        headStyles: { font: "helvetica", fontStyle: 'bold' },
+                        bodyStyles: { font: "helvetica" }
+                    });
+                    y = doc.autoTable.previous.finalY + 10;
+                }
+
+                // Example for Insurance Types
+                if (customerData.insuranceTypes && customerData.insuranceTypes.length > 0) {
+                     doc.autoTable({
+                        startY: y,
+                        head: [['Topic', 'Type', 'Code', 'Discount (%)', 'Discount (THB)']],
+                        body: customerData.insuranceTypes.map(i => [i.topic, i.type, i.code, i.discountPercent, i.discountBaht]),
+                        headStyles: { font: "helvetica", fontStyle: 'bold' },
+                        bodyStyles: { font: "helvetica" }
+                    });
+                }
+
+                doc.save(`Customer_${customerData["รหัส"] || 'details'}.pdf`);
+            }
+
+
+            // --- START ---
+            initializeApp();
+
+            // --- New Event Listener for PDF buttons ---
+            customerTableBody.addEventListener('click', (e) => {
+                if (e.target.classList.contains('pdf-btn')) {
+                    const row = e.target.closest('tr');
+                    const customerId = row.dataset.customerId;
+                    const customer = customers.find(c => c['รหัส'] === customerId);
+                    if (customer) {
+                        // In a real scenario, you might need to fetch full details if not all are loaded initially
+                        // For now, we assume 'customer' object has all we need.
+                        // We'll create a mock full object for demonstration.
+                        const fullCustomerData = {
+                            ...customer,
+                            contacts: [ // This data would be collected from the form/database
+                                { name: customer['ชื่อผู้ติดต่อ'], phone: '02-123-4567', mobile: '081-123-4567', email: 'contact@example.com' }
+                            ],
+                            insuranceTypes: [ // This data would also be from the form/database
+                                { topic: 'COMPULSORY', type: 'พรบ. รถยนต์', code: 'C-CAR', discountPercent: 10, discountBaht: 0 }
+                            ]
+                        };
+                        generateCustomerPdf(fullCustomerData);
+                    } else {
+                        showError('ไม่พบข้อมูลลูกค้าสำหรับสร้าง PDF');
+                    }
+                }
+            });
+
+            // --- Delegated Event Listener for Dynamic Work Types ---
+            workTypesContainer.addEventListener('focusin', (e) => {
+                if (e.target.classList.contains('topic-insurance-input')) {
+                    const optionsEl = e.target.nextElementSibling;
+                    populateTopicInsuranceDropdown(e.target.value, optionsEl);
+                    optionsEl.classList.remove('hidden');
+                } else if (e.target.classList.contains('insurance-type-input')) {
+                    const optionsEl = e.target.nextElementSibling;
+                    populateInsuranceTypeDropdown(e.target.value, optionsEl);
+                    optionsEl.classList.remove('hidden');
+                }
+            });
+            workTypesContainer.addEventListener('input', (e) => {
+                if (e.target.classList.contains('topic-insurance-input')) {
+                    const optionsEl = e.target.nextElementSibling;
+                    populateTopicInsuranceDropdown(e.target.value, optionsEl);
+                    optionsEl.classList.remove('hidden');
+                } else if (e.target.classList.contains('insurance-type-input')) {
+                    const optionsEl = e.target.nextElementSibling;
+                    populateInsuranceTypeDropdown(e.target.value, optionsEl);
+                    optionsEl.classList.remove('hidden');
+                }
+            });
+
+            document.addEventListener('click', (e) => {
+                // Close insurance type dropdowns
+                const openInsuranceDropdowns = workTypesContainer.querySelectorAll('.insurance-type-options:not(.hidden)');
+                openInsuranceDropdowns.forEach(dropdown => {
+                    if (!dropdown.parentElement.contains(e.target)) {
+                        dropdown.classList.add('hidden');
+                    }
+                });
+                const openTopicDropdowns = workTypesContainer.querySelectorAll('.topic-insurance-options:not(.hidden)');
+                openTopicDropdowns.forEach(dropdown => {
+                    if (!dropdown.parentElement.contains(e.target)) {
+                        dropdown.classList.add('hidden');
+                    }
+                });
+            });
+
+            prefixInput.addEventListener('focus', () => {
+                // Populate prefix options if needed
+                if (!prefixInput.value) {
+                    populatePrefixOptions();
+                }
+            });
+
+            // --- EVENT LISTENERS ---
+            function setupEventListeners() {
+                modalCloseBtns.forEach(btn => btn.addEventListener('click', () => modal.classList.add('hidden')));
+                
+                customerForm.addEventListener('submit', handleFormSubmit);
+
+                document.getElementById('add-customer-btn').addEventListener('click', () => {
+                    customerForm.reset();
+                    // Reset contact sections
+                    document.querySelectorAll('.contact-section').forEach(section => section.classList.add('hidden'));
+                    document.getElementById('default-contact').classList.remove('hidden');
+
+                    // Reset work type sections
+                    document.querySelectorAll('.work-type-section').forEach(section => {
+                        section.querySelector('[name="หัวข้อประเภทงาน"]').value = '';
+                        section.querySelector('[name="ประเภทงาน"]').value = '';
+                        section.querySelector('[name="รหัสประเภทงาน"]').value = '';
+                        section.querySelector('[name="ส่วนลดลูกค้า (%)"]').value = '';
+                        section.querySelector('[name="ส่วนลดลูกค้า (บาท)"]').value = '';
+                        section.querySelector('[name="ค่าคอมตัวแทน (%)"]').value = '';
+                        section.querySelector('[name="ค่าคอมตัวแทน (บาท)"]').value = '';
+                    });
+
+                    // Reset customer code
+                    const codePrefix = document.getElementById('customerCode').value;
+                    const codeSequence = document.getElementById('customerCodeSequence').value;
+                    document.getElementById('customerCode').value = codePrefix;
+                    document.getElementById('customerCodeSequence').value = codeSequence;
+                });
+
+                const workTypesContainer = document.getElementById('workTypesContainer');
+                const addWorkTypeBtn = document.getElementById('addWorkTypeBtn');
+
+                addWorkTypeBtn.addEventListener('click', () => {
+                    const count = workTypesContainer.querySelectorAll('.work-type-section').length;
+                    const newSection = document.createElement('div');
+                    newSection.className = 'work-type-section mb-4 p-4 bg-gray-50 rounded-lg';
+                    newSection.innerHTML = `
+                        <div class="flex justify-between items-center mb-3">
+                            <h5 class="font-medium text-gray-700">ประเภทงาน ${count + 1}</h5>
+                            <button type="button" class="remove-work-type-btn text-sm text-red-600 hover:text-red-800">&times; ลบ</button>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">หัวข้อประเภทงาน</label>
+                                <div class="relative">
+                                    <input type="text" name="หัวข้อประเภทงาน" placeholder="ค้นหาหัวข้อ..." class="topic-insurance-input w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <div class="topic-insurance-options absolute z-10 w-full bg-white border border-gray-300 rounded-lg mt-1 max-h-40 overflow-y-auto hidden"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">ประเภทงาน</label>
+                                <div class="relative">
+                                    <input type="text" name="ประเภทงาน" placeholder="ค้นหาประเภท..." class="insurance-type-input w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <div class="insurance-type-options absolute z-10 w-full bg-white border border-gray-300 rounded-lg mt-1 max-h-40 overflow-y-auto hidden"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">รหัสประเภทงาน</label>
+                                <input type="text" name="รหัสประเภทงาน" placeholder="เลือกประเภทงานก่อน" class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-100" readonly>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">ส่วนลดลูกค้า (%) ไม่มีส่วนลดใส่ 0</label>
+                                <input type="number" min="0" max="100" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">ค่าคอมตัวแทน (%) ไม่มีตัวแทนใส่ 0</label>
+                                <input type="number" min="0" max="100" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                        </div>
+                    `;
+                    workTypesContainer.appendChild(newSection);
+                });
+
+                workTypesContainer.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('remove-work-type-btn')) {
+                        const section = e.target.closest('.work-type-section');
+                        section.remove();
+                    }
+                });
+            }
+
+            // Initial setup
+            fetchCustomers();
+            setupEventListeners();
+        });
+    </script>
+</body>
+</html>

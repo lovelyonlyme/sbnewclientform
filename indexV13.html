@@ -1,0 +1,1570 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบจัดการข้อมูลลูกค้า</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body {
+            font-family: 'Sarabun', sans-serif;
+            background-color: #f0f4f8;
+        }
+        .sidebar {
+            transition: all 0.3s;
+        }
+        .content-area {
+            transition: all 0.3s;
+        }
+        .active-nav {
+            background-color: #1e40af;
+            color: white;
+        }
+        .table-container {
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        th {
+            background-color: #f8fafc;
+            font-weight: 600;
+        }
+        tr:hover {
+            background-color: #f1f5f9;
+        }
+        .status-pending {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+        .status-approved {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+        .status-rejected {
+            background-color: #fee2e2;
+            color: #b91c1c;
+        }
+        .modal {
+            transition: opacity 0.3s ease;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+        }
+    </style>
+</head>
+<body>
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        <div id="sidebar" class="sidebar w-64 bg-blue-800 text-white p-4 flex flex-col">
+            <div class="text-xl font-bold mb-8 mt-2">ระบบจัดการลูกค้า</div>
+            
+            <nav class="flex-1">
+                <ul>
+                    <li class="mb-2">
+                        <a href="#customers" class="w-full text-left px-4 py-2 rounded hover:bg-blue-700 flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                            </svg>
+                            ข้อมูลลูกค้า
+                        </a>
+                    </li>
+                    <li class="mb-2">
+                        <a href="#approval" class="w-full text-left px-4 py-2 rounded hover:bg-blue-700 flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            ระบบอนุมัติ
+                        </a>
+                    </li>
+                    <li class="mb-2">
+                        <a href="#dashboard" class="w-full text-left px-4 py-2 rounded hover:bg-blue-700 flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                            </svg>
+                            แดชบอร์ด
+                        </a>
+                    </li>
+                    <li class="mb-2">
+                        <a href="#settings" class="w-full text-left px-4 py-2 rounded hover:bg-blue-700 flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            ตั้งค่า
+                        </a>
+                    </li>
+                    <li class="mb-2">
+                        <a href="#admin" class="w-full text-left px-4 py-2 rounded hover:bg-blue-700 flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                            </svg>
+                            ระบบหลังบ้านแอดมิน
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            
+            <div class="mt-auto">
+                <button class="w-full text-left px-4 py-2 rounded hover:bg-blue-700 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    ออกจากระบบ
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="content-area flex-1" id="main-content">
+            <!-- Header -->
+            <header class="bg-white shadow">
+                <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
+                    <div class="flex items-center">
+                        <button id="menu-toggle" class="mr-4 text-gray-500 hover:text-gray-700">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                            </svg>
+                        </button>
+                        <h1 class="text-xl font-semibold text-gray-900">ข้อมูลลูกค้า</h1>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="relative">
+                            <input type="text" placeholder="ค้นหา..." class="px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400 absolute right-3 top-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </div>
+                        <div class="ml-4 relative">
+                            <button class="flex items-center focus:outline-none">
+                                <div class="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-white">
+                                    <span>ก</span>
+                                </div>
+                                <span class="ml-2 text-gray-700">กมลชนก</span>
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-1 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Content Sections -->
+            <div class="py-6">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <!-- Customer Data Section -->
+                    <div id="customer-section" class="bg-white rounded-lg shadow p-6 mb-6">
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-lg font-semibold text-gray-900">รายชื่อลูกค้า New Client</h2>
+                            <button id="add-customer-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                                </svg>
+                                เพิ่มข้อมูลลูกค้า
+                            </button>
+                        </div>
+                        
+                        <div class="table-container">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ชื่อลูกค้า</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ผู้ติดต่อหลัก</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ตัวแทน</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">รหัสพนักงาน</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">สถานะ</th>
+                                        <th scope="col" class="relative px-6 py-3">
+                                            <span class="sr-only">Edit</span>
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody id="customer-table-body" class="bg-white divide-y divide-gray-200">
+                                    <!-- Customer data will be populated here -->
+                                </tbody>
+                            </table>
+                        </div>
+                         <div id="no-customers" class="py-8 text-center text-gray-500 hidden">
+                            ไม่มีข้อมูลลูกค้า
+                        </div>
+                        
+                        <div class="mt-6 flex justify-between items-center">
+                            <div class="text-sm text-gray-500">แสดง 1 ถึง 5 จาก 25 รายการ</div>
+                            <div class="flex space-x-1">
+                                <button class="px-3 py-1 border rounded text-gray-600 hover:bg-gray-100">&laquo;</button>
+                                <button class="px-3 py-1 border rounded bg-blue-600 text-white">1</button>
+                                <button class="px-3 py-1 border rounded text-gray-600 hover:bg-gray-100">2</button>
+                                <button class="px-3 py-1 border rounded text-gray-600 hover:bg-gray-100">3</button>
+                                <button class="px-3 py-1 border rounded text-gray-600 hover:bg-gray-100">4</button>
+                                <button class="px-3 py-1 border rounded text-gray-600 hover:bg-gray-100">5</button>
+                                <button class="px-3 py-1 border rounded text-gray-600 hover:bg-gray-100">&raquo;</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dashboard Section (Hidden by default) -->
+                    <div id="dashboard-section" class="bg-white rounded-lg shadow p-6 mb-6 hidden">
+                        <h2 class="text-lg font-semibold text-gray-900 mb-6">แดชบอร์ด</h2>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                            <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-6 text-white">
+                                <div class="flex justify-between items-center">
+                                    <div>
+                                        <p class="text-sm opacity-80">จำนวนลูกค้าทั้งหมด</p>
+                                        <p class="text-3xl font-bold mt-1">256</p>
+                                    </div>
+                                    <div class="bg-white bg-opacity-30 p-3 rounded-full">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div class="mt-4 flex items-center text-sm">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                                    </svg>
+                                    <span>เพิ่มขึ้น 12% จากเดือนที่แล้ว</span>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-gradient-to-r from-green-500 to-green-600 rounded-lg p-6 text-white">
+                                <div class="flex justify-between items-center">
+                                    <div>
+                                        <p class="text-sm opacity-80">ลูกค้าที่อนุมัติแล้ว</p>
+                                        <p class="text-3xl font-bold mt-1">198</p>
+                                    </div>
+                                    <div class="bg-white bg-opacity-30 p-3 rounded-full">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </div>
+                                </div>
+                                <div class="mt-4 flex items-center text-sm">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                                    </svg>
+                                    <span>เพิ่มขึ้น 8% จากเดือนที่แล้ว</span>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-gradient-to-r from-amber-500 to-amber-600 rounded-lg p-6 text-white">
+                                <div class="flex justify-between items-center">
+                                    <div>
+                                        <p class="text-sm opacity-80">ลูกค้ารออนุมัติ</p>
+                                        <p class="text-3xl font-bold mt-1">42</p>
+                                    </div>
+                                    <div class="bg-white bg-opacity-30 p-3 rounded-full">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </div>
+                                </div>
+                                <div class="mt-4 flex items-center text-sm">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
+                                    </svg>
+                                    <span>ลดลง 5% จากเดือนที่แล้ว</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <div class="bg-white border rounded-lg p-6">
+                                <h3 class="text-md font-semibold text-gray-800 mb-4">ประเภทลูกค้า</h3>
+                                <div class="h-64 flex items-center justify-center">
+                                    <svg viewBox="0 0 100 100" class="w-full h-full">
+                                        <circle cx="50" cy="50" r="40" fill="transparent" stroke="#e2e8f0" stroke-width="10" />
+                                        <circle cx="50" cy="50" r="40" fill="transparent" stroke="#3b82f6" stroke-width="10" stroke-dasharray="188.5 251.3" transform="rotate(-90 50 50)" />
+                                        <circle cx="50" cy="50" r="40" fill="transparent" stroke="#10b981" stroke-width="10" stroke-dasharray="62.8 251.3" transform="rotate(188.5 50 50)" />
+                                        <text x="50" y="50" text-anchor="middle" dy=".3em" font-size="20" fill="#1e293b">75%</text>
+                                    </svg>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4 mt-4">
+                                    <div class="flex items-center">
+                                        <div class="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
+                                        <span class="text-sm text-gray-600">ลูกค้าประจำ (75%)</span>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <div class="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+                                        <span class="text-sm text-gray-600">ลูกค้าใหม่ (25%)</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-white border rounded-lg p-6">
+                                <h3 class="text-md font-semibold text-gray-800 mb-4">สถิติรายเดือน</h3>
+                                <div class="h-64 flex items-end justify-between space-x-2">
+                                    <div class="flex flex-col items-center">
+                                        <div class="w-8 bg-blue-500 rounded-t-md" style="height: 30%"></div>
+                                        <span class="text-xs mt-1">ม.ค.</span>
+                                    </div>
+                                    <div class="flex flex-col items-center">
+                                        <div class="w-8 bg-blue-500 rounded-t-md" style="height: 45%"></div>
+                                        <span class="text-xs mt-1">ก.พ.</span>
+                                    </div>
+                                    <div class="flex flex-col items-center">
+                                        <div class="w-8 bg-blue-500 rounded-t-md" style="height: 60%"></div>
+                                        <span class="text-xs mt-1">มี.ค.</span>
+                                    </div>
+                                    <div class="flex flex-col items-center">
+                                        <div class="w-8 bg-blue-500 rounded-t-md" style="height: 40%"></div>
+                                        <span class="text-xs mt-1">เม.ย.</span>
+                                    </div>
+                                    <div class="flex flex-col items-center">
+                                        <div class="w-8 bg-blue-500 rounded-t-md" style="height: 55%"></div>
+                                        <span class="text-xs mt-1">พ.ค.</span>
+                                    </div>
+                                    <div class="flex flex-col items-center">
+                                        <div class="w-8 bg-blue-500 rounded-t-md" style="height: 75%"></div>
+                                        <span class="text-xs mt-1">มิ.ย.</span>
+                                    </div>
+                                    <div class="flex flex-col items-center">
+                                        <div class="w-8 bg-blue-600 rounded-t-md" style="height: 85%"></div>
+                                        <span class="text-xs mt-1">ก.ค.</span>
+                                    </div>
+                                    <div class="flex flex-col items-center">
+                                        <div class="w-8 bg-blue-600 rounded-t-md" style="height: 90%"></div>
+                                        <span class="text-xs mt-1">ส.ค.</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Approval System Section (Hidden by default) -->
+                    <div id="approval-section" class="bg-white rounded-lg shadow p-6 mb-6 hidden">
+                        <h2 class="text-xl font-semibold text-gray-800 mb-6">ระบบอนุมัติข้อมูลลูกค้า</h2>
+                        
+                        <div class="bg-white rounded-lg shadow p-6 mb-6">
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">อนุมัติ TY</th>
+                                            <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">อนุมัติ CK</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ชื่อลูกค้า</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ผู้ติดต่อหลัก</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ตัวแทน</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">รหัสพนักงาน</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">สถานะ</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="approval-table-body" class="bg-white divide-y divide-gray-200">
+                                        <!-- Approval data will be populated here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div id="no-approvals" class="py-8 text-center text-gray-500">
+                                ไม่มีรายการที่รอการอนุมัติ
+                            </div>
+                        </div>
+                    
+                            <div class="mt-6 flex justify-between items-center">
+                                <div class="text-sm text-gray-500">แสดง 1 ถึง 5 จาก 12 รายการ</div>
+                                <div class="flex space-x-1">
+                                    <button class="px-3 py-1 border rounded text-gray-600 hover:bg-gray-100">&laquo;</button>
+                                    <button class="px-3 py-1 border rounded bg-blue-600 text-white">1</button>
+                                    <button class="px-3 py-1 border rounded text-gray-600 hover:bg-gray-100">2</button>
+                                    <button class="px-3 py-1 border rounded text-gray-600 hover:bg-gray-100">3</button>
+                                    <button class="px-3 py-1 border rounded text-gray-600 hover:bg-gray-100">4</button>
+                                    <button class="px-3 py-1 border rounded text-gray-600 hover:bg-gray-100">5</button>
+                                    <button class="px-3 py-1 border rounded text-gray-600 hover:bg-gray-100">&raquo;</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Settings Section (Hidden by default) -->
+                        <div id="settings-section" class="bg-white rounded-lg shadow p-6 mb-6 hidden">
+                            <h2 class="text-xl font-semibold text-gray-800 mb-6">ตั้งค่า</h2>
+                            <p>ส่วนนี้สำหรับการตั้งค่าต่างๆของระบบ</p>
+                        </div>
+
+                        <!-- Admin Backend Section (Hidden by default) -->
+                        <div id="admin-section" class="bg-white rounded-lg shadow p-6 mb-6 hidden">
+                            <h2 class="text-xl font-semibold text-gray-800 mb-6">ระบบหลังบ้านแอดมิน</h2>
+                            <div class="bg-gray-50 p-6 rounded-lg border mb-6">
+                                <h3 class="text-lg font-semibold text-gray-700 mb-4">จัดการข้อมูลผ่าน Google Sheet</h3>
+                                <p class="text-sm text-gray-600 mb-4">
+                                    ข้อมูลลูกค้าและกลุ่มลูกค้าถูกจัดการโดยตรงใน Google Sheet ที่คุณได้ตั้งค่าไว้
+                                    คุณสามารถแก้ไขข้อมูลได้โดยตรงจาก Google Sheet และการเปลี่ยนแปลงจะแสดงผลในแอปพลิเคชันนี้แบบเรียลไทม์
+                                </p>
+                                <a href="https://docs.google.com/spreadsheets/d/14QGIPHo6kf7xfoiEZgZQkKfN4z1UCWNPb4sp0tiVAZY/edit" target="_blank" class="inline-flex items-center bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg shadow">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M3 3a2 2 0 012-2h10a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V3zm2-1a1 1 0 00-1 1v14a1 1 0 001 1h10a1 1 0 001-1V3a1 1 0 00-1-1H5z" clip-rule="evenodd" />
+                                        <path d="M6 6h8v2H6V6zm0 4h8v2H6v-2zm0 4h5v2H6v-2z" />
+                                    </svg>
+                                    เปิด Google Sheet
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Modal รายละเอียดข้อมูลลูกค้าใหม่ -->
+    <input type="hidden" id="customerId">
+    <div id="customerModal" class="modal bg-black bg-opacity-50 hidden">
+        <div class="modal-content bg-white rounded-lg shadow-xl w-full max-w-5xl max-h-[90vh] overflow-y-auto">
+            <div class="border-b p-4 bg-blue-600 text-white rounded-t-lg flex justify-between items-center">
+                <h3 class="text-xl font-semibold">รายละเอียดข้อมูลลูกค้าใหม่</h3>
+                <button class="modal-close text-white hover:text-gray-200">&times;</button>
+            </div>
+            
+            <div class="p-6">
+                <form id="customerForm">
+                    <!-- ข้อมูลผู้เอาประกันภัย -->
+                    <div class="mb-6">
+  <h4 class="text-lg font-semibold text-blue-800 mb-4 pb-2 border-b border-gray-200">
+    ข้อมูลผู้เอาประกันภัย
+  </h4>
+  <!-- ใช้ grid-cols-4 เพื่อจัดเรียง 4 ช่องใน 1 แถว (desktop), 1 ช่อง (mobile) -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+    <!-- รหัส -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">รหัส <span class="text-red-500">*</span></label>
+      <div class="flex items-center space-x-2">
+        <input
+          type="text"
+          id="customerCode"
+          class="w-20 h-10 border border-gray-300 rounded-lg px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase text-left placeholder-gray-400"
+          maxlength="3"
+          placeholder="ABC"
+          oninput="this.value = this.value.replace(/[^A-Za-z]/g, '').toUpperCase();"
+        />
+        <span class="text-gray-500">-</span>
+        <input
+          type="text"
+          id="customerCodeSequence"
+          class="w-20 h-10 border border-gray-300 rounded-lg px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-left placeholder-gray-400"
+          placeholder="0001"
+          maxlength="4"
+          oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+          disabled
+        />
+      </div>
+      <p class="text-xs text-gray-500 mt-1">กรอกเฉพาะตัวอักษรภาษาอังกฤษ 3 ตัวแรก</p>
+    </div>
+    <!-- ประเภท (radio) -->
+    <div>
+        <div class="flex flex-col justify-end h-full">
+            <label class="block text-sm font-medium text-gray-700 mb-1">ประเภท <span class="text-red-500">*</span></label>
+            <div class="flex item-center space-x-4">
+                <label class="inline-flex items-center">
+                <input type="radio" name="customerType" value="personal" class="form-radio h-4 w-4 text-blue-600" checked />
+                <span class="ml-2 text-sm text-gray-700">บุคคล</span>
+                </label>
+                    <label class="inline-flex items-center">
+                    <input type="radio" name="customerType" value="corporate" class="form-radio h-4 w-4 text-blue-600" />
+                    <span class="ml-2 text-sm text-gray-700">นิติบุคคล</span>
+                    </label>
+            </div>
+        </div>
+    </div>
+    <!-- ประเภทกลุ่มลูกค้า -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">ประเภทกลุ่มลูกค้า</label>
+      <div class="relative" id="customer-group-dropdown">
+        <input type="text" id="customer-group-input" name="ประเภทกลุ่มลูกค้า" placeholder="ค้นหาหรือพิมพ์ใหม่..." class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <div id="customer-group-options" class="absolute z-10 w-full bg-white border border-gray-300 rounded-lg mt-1 max-h-40 overflow-y-auto hidden">
+          <!-- Options will be populated by JS -->
+        </div>
+      </div>
+    </div>
+  </div>-->
+
+  <!-- แถวที่สองสำหรับ คำนำหน้า, ชื่อ, นามสกุล -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-start mt-4">
+      <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">คำนำหน้า <span class="text-red-500">*</span></label>
+          <div class="relative" id="prefix-dropdown">
+              <input type="text" id="prefix-input" name="คำนำหน้า" placeholder="เลือกประเภทก่อน..." class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-100 cursor-not-allowed" disabled>
+              <div id="prefix-options" class="absolute z-20 w-full bg-white border border-gray-300 rounded-lg mt-1 max-h-40 overflow-y-auto hidden">
+                <!-- Options will be populated by JS -->
+              </div>
+          </div>
+      </div>
+
+      <div id="firstNameContainer" class="md:col-span-1">
+          <label id="firstNameLabel" class="block text-sm font-medium text-gray-700 mb-1">ชื่อ <span class="text-red-500">*</span></label>
+          <input type="text" id="firstName" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+      </div>
+      
+      <div id="lastNameContainer">
+          <label class="block text-sm font-medium text-gray-700 mb-1">นามสกุล <span class="text-red-500">*</span></label>
+          <input type="text" id="lastName" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+      </div>
+  </div>
+
+                    
+                    <!-- ที่อยู่ผู้เอาประกันภัย -->
+                    <div class="mb-6">
+                        <h4 class="text-lg font-semibold text-blue-800 mb-4 pb-2 border-b border-gray-200">ที่อยู่ผู้เอาประกันภัย</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">บ้านเลขที่ <span class="text-red-500">*</span></label>
+                                <input type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">ซอย</label>
+                                <input type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">ถนน</label>
+                                <input type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">แขวง/ตำบล <span class="text-red-500">*</span></label>
+                                <input type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">เขต/อำเภอ <span class="text-red-500">*</span></label>
+                                <div class="relative" id="district-dropdown">
+                                    <input type="text" id="district-input" name="เขต/อำเภอ" placeholder="เลือกจังหวัดก่อน..." class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-100 cursor-not-allowed" disabled>
+                                    <div id="district-options" class="absolute z-20 w-full bg-white border border-gray-300 rounded-lg mt-1 max-h-40 overflow-y-auto hidden">
+                                      <!-- Options will be populated by JS -->
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">จังหวัด <span class="text-red-500">*</span></label>
+                                <div class="relative" id="province-dropdown">
+                                    <input type="text" id="province-input" name="จังหวัด" placeholder="ค้นหาจังหวัด..." class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <div id="province-options" class="absolute z-20 w-full bg-white border border-gray-300 rounded-lg mt-1 max-h-40 overflow-y-auto hidden">
+                                      <!-- Options will be populated by JS -->
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">รหัสไปรษณีย์ <span class="text-red-500">*</span></label>
+                                <input type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" maxlength="5">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ที่อยู่จัดส่ง -->
+                    <div class="mb-6">
+                        <h4 class="text-lg font-semibold text-blue-800 mb-4 pb-2 border-b border-gray-200">ที่อยู่จัดส่ง</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">บ้านเลขที่ <span class="text-red-500">*</span></label>
+                                <input type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">ซอย</label>
+                                <input type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">ถนน</label>
+                                <input type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">แขวง/ตำบล <span class="text-red-500">*</span></label>
+                                <input type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">เขต/อำเภอ <span class="text-red-500">*</span></label>
+                                <div class="relative" id="shipping-district-dropdown">
+                                    <input type="text" id="shipping-district-input" name="เขต/อำเภอ (จัดส่ง)" placeholder="เลือกจังหวัดก่อน..." class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-100 cursor-not-allowed" disabled>
+                                    <div id="shipping-district-options" class="absolute z-20 w-full bg-white border border-gray-300 rounded-lg mt-1 max-h-40 overflow-y-auto hidden">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">จังหวัด <span class="text-red-500">*</span></label>
+                                <div class="relative" id="shipping-province-dropdown">
+                                    <input type="text" id="shipping-province-input" name="จังหวัด (จัดส่ง)" placeholder="ค้นหาจังหวัด..." class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <div id="shipping-province-options" class="absolute z-20 w-full bg-white border border-gray-300 rounded-lg mt-1 max-h-40 overflow-y-auto hidden">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">รหัสไปรษณีย์ <span class="text-red-500">*</span></label>
+                                <input type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" maxlength="5">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ข้อมูลลูกค้าอื่นๆ -->
+                    <div class="mb-6">
+                        <h4 class="text-lg font-semibold text-blue-800 mb-4 pb-2 border-b border-gray-200">ข้อมูลลูกค้าอื่นๆ</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">ID/TAX ID</label>
+                                <input type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" maxlength="13">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">โทรศัพท์</label>
+                                <input type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" maxlength="9">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Mobile Phone</label>
+                                <input type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" maxlength="10">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                                <input type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" maxlength="50">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">ประเภทธุรกิจหลัก</label>
+                                <div class="relative" id="main-business-type-dropdown">
+                                    <input type="text" id="main-business-type-input" name="ประเภทธุรกิจหลัก" placeholder="ค้นหาประเภทธุรกิจ..." class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <div id="main-business-type-options" class="absolute z-10 w-full bg-white border border-gray-300 rounded-lg mt-1 max-h-40 overflow-y-auto hidden">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">ประเภทธุรกิจย่อย</label>
+                                <div class="relative" id="sub-business-type-dropdown">
+                                    <input type="text" id="sub-business-type-input" name="เลือกประเภทธุรกิจ" placeholder="เลือกประเภทหลักก่อน..." class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-100 cursor-not-allowed" disabled>
+                                    <div id="sub-business-type-options" class="absolute z-10 w-full bg-white border border-gray-300 rounded-lg mt-1 max-h-40 overflow-y-auto hidden">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">หมายเหตุ</label>
+                                <textarea class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" rows="2"></textarea>
+                            </div>
+
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">หมายเหตุ (การเงิน)</label>
+                                <textarea class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" rows="2"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- ข้อมูลผู้ติดต่อ Primary -->
+                    <div class="mb-6">
+                        <h4 class="text-lg font-semibold text-blue-800 mb-4 pb-2 border-b border-gray-200">ข้อมูลผู้ติดต่อ Primary</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อผู้ติดต่อ</label>
+                                <input type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">โทรศัพท์</label>
+                                <input type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Mobile Phone</label>
+                                <input type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                                <input type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">หมายเหตุ</label>
+                                <input type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- สำหรับเอสบี -->
+                    <div class="mb-6">
+                        <h4 class="text-lg font-semibold text-blue-800 mb-4 pb-2 border-b border-gray-200">สำหรับเอสบี</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">ผู้แนะนำ</label>
+                                <input type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">ตัวแทน</label>
+                                <select class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="">เลือกตัวแทน</option>
+                                    <option value="agent1">ตัวแทน A</option>
+                                    <option value="agent2">ตัวแทน B</option>
+                                    <option value="agent3">ตัวแทน C</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อตัวแทนย่อย</label>
+                                <input type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">พนักงานผู้ดูแล</label>
+                                <select class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="">เลือกพนักงานผู้ดูแล</option>
+                                    <option value="staff1">พนักงาน A</option>
+                                    <option value="staff2">พนักงาน B</option>
+                                    <option value="staff3">พนักงาน C</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- ข้อมูลประเภทงานที่ลูกค้าทำประกัน -->
+                    <div class="mb-6">
+                        <h4 class="text-lg font-semibold text-blue-800 mb-4 pb-2 border-b border-gray-200">ข้อมูลประเภทงานที่ลูกค้าทำประกัน</h4>
+                        
+                        <!-- ประเภทงาน 1 -->
+                        <div class="mb-4 p-4 bg-gray-50 rounded-lg">
+                            <h5 class="font-medium text-gray-700 mb-3">ประเภทงาน 1</h5>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">ประเภทงาน</label>
+                                    <select class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        <option value="">เลือกประเภทงาน</option>
+                                        <option value="work1">ประกันภัยรถยนต์</option>
+                                        <option value="work2">ประกันอัคคีภัย</option>
+                                        <option value="work3">ประกันสุขภาพ</option>
+                                    </select>
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">ส่วนลดลูกค้า (%) ไม่มีส่วนลดใส่ 0</label>
+                                    <input type="number" min="0" max="100" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">ค่าคอมตัวแทน (%) ไม่มีตัวแทนใส่ 0</label>
+                                    <input type="number" min="0" max="100" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- ประเภทงาน 2 -->
+                        <div class="p-4 bg-gray-50 rounded-lg">
+                            <h5 class="font-medium text-gray-700 mb-3">ประเภทงาน 2</h5>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">ประเภทงาน</label>
+                                    <select class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        <option value="">เลือกประเภทงาน</option>
+                                        <option value="work1">ประกันภัยรถยนต์</option>
+                                        <option value="work2">ประกันอัคคีภัย</option>
+                                        <option value="work3">ประกันสุขภาพ</option>
+                                    </select>
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">ส่วนลดลูกค้า (%) ไม่มีส่วนลดใส่ 0</label>
+                                    <input type="number" min="0" max="23" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">ค่าคอมตัวแทน (%) ไม่มีตัวแทนใส่ 0</label>
+                                    <input type="number" min="0" max="23" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="border-t p-4 flex justify-end space-x-3 bg-gray-50 rounded-b-lg">
+                <button id="cancelBtn" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-100 transition-colors">
+                    ยกเลิก
+                </button>
+                <button id="saveBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors">
+                    บันทึกข้อมูล
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Customer Modal -->
+<div id="view-customer-modal" class="modal opacity-0 pointer-events-none fixed w-full h-full top-0 left-0 flex items-center justify-center z-50">
+    <div class="modal-overlay absolute w-full h-full bg-gray-900 opacity-50"></div>
+    <div class="modal-container bg-white w-11/12 md:max-w-md mx-auto rounded-lg shadow-lg z-50 overflow-y-auto">
+        <div class="modal-content py-4 text-left px-6">
+            <div class="flex justify-between items-center pb-3">
+                <p class="text-xl font-bold">ข้อมูลลูกค้า</p>
+                <div class="modal-close cursor-pointer z-50">
+                    <svg class="fill-current text-gray-500" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18">
+                        <path d="M14.53 4.53l-1.06-1.06L9 7.94 4.53 3.47 3.47 4.53 7.94 9l-4.47 4.47 1.06 1.06L9 10.06l4.47 4.47 1.06-1.06L10.06 9z"></path>
+                    </svg>
+                </div>
+            </div>
+            <div id="customer-details" class="space-y-4"></div>
+            <div class="flex justify-end pt-4">
+                <button id="edit-customer-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg mr-2">
+                    แก้ไข
+                </button>
+                <button class="modal-close-btn bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-lg">
+                    ปิด
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
+
+
+
+--------------------------------------------
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // --- CONFIGURATION ---
+            const API_URL = 'https://script.google.com/macros/s/AKfycbw2rIDc3qLGF9ii-Il3_mSgIukuJHaQ-l8ndzvlOhd_MOUfQPw8jK4k-dg9_k2FOor-tg/exec';
+            
+            // --- ELEMENT REFERENCES ---
+            const customerTableBody = document.querySelector('#customer-table-body');
+            const approvalTableBody = document.querySelector('#approval-table-body');
+            const noCustomers = document.getElementById('no-customers');
+            const noApprovals = document.getElementById('no-approvals');
+            const modal = document.getElementById('customerModal');
+            const customerForm = document.getElementById('customerForm');
+            const customerIdInput = document.getElementById('customerId');
+            const mainContent = document.getElementById('main-content');
+            const customerSection = document.getElementById('customer-section');
+            const approvalSection = document.getElementById('approval-section');
+            const settingsSection = document.getElementById('settings-section');
+            const adminSection = document.getElementById('admin-section');
+            const dashboardSection = document.getElementById('dashboard-section');
+            const saveBtn = document.getElementById('saveBtn');
+            const cancelBtn = document.getElementById('cancelBtn');
+            const modalCloseBtns = modal.querySelectorAll('.modal-close, #cancelBtn');
+
+            // --- CUSTOM DROPDOWN ELEMENTS ---
+            const customerGroupDropdown = document.getElementById('customer-group-dropdown');
+            const customerGroupInput = document.getElementById('customer-group-input');
+            const customerGroupOptions = document.getElementById('customer-group-options');
+            const prefixDropdown = document.getElementById('prefix-dropdown');
+            const prefixInput = document.getElementById('prefix-input');
+            const prefixOptions = document.getElementById('prefix-options');
+            const provinceInput = document.getElementById('province-input');
+            const provinceOptions = document.getElementById('province-options');
+            const districtInput = document.getElementById('district-input');
+            const districtOptions = document.getElementById('district-options');
+            const shippingProvinceInput = document.getElementById('shipping-province-input');
+            const shippingProvinceOptions = document.getElementById('shipping-province-options');
+            const shippingDistrictInput = document.getElementById('shipping-district-input');
+            const shippingDistrictOptions = document.getElementById('shipping-district-options');
+            const mainBusinessTypeInput = document.getElementById('main-business-type-input');
+            const mainBusinessTypeOptions = document.getElementById('main-business-type-options');
+            const subBusinessTypeInput = document.getElementById('sub-business-type-input');
+            const subBusinessTypeOptions = document.getElementById('sub-business-type-options');
+
+            // --- DATA STORE ---
+            let customers = [];
+            let customerGroups = [];
+            let prefixes = []; // This will be populated on demand
+            let provinceSBData = [];
+            let uniqueProvinces = [];
+            let businessTypeData = [];
+
+            // --- API FUNCTIONS ---
+            async function fetchData(sheetName) {
+                console.log(`Fetching data from sheet: ${sheetName}`);
+                try {
+                    const response = await fetch(`${API_URL}?sheet=${sheetName}`);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const result = await response.json();
+                    if (result.status === 'error') {
+                        if (result.message.includes("Sheet not found")) {
+                             throw new Error(`Sheet '${sheetName}' not found. Please check the name.`);
+                        }
+                        throw new Error(result.message);
+                    }
+                    console.log(`Successfully fetched data for ${sheetName}:`, result.data);
+                    return result.data;
+                } catch (error) {
+                    console.error(`Error fetching data from ${sheetName}:`, error);
+                    showError(`เกิดข้อผิดพลาดในการโหลดข้อมูลจาก '${sheetName}': ${error.message}`);
+                    return [];
+                }
+            }
+
+            async function saveData(sheetName, data) {
+                console.log(`Saving data to sheet: ${sheetName}`, data);
+                showLoadingSpinner(true);
+                const url = `${API_URL}`;
+                const payload = { sheet: sheetName, data: data };
+
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload),
+                    });
+                    const result = await response.json();
+                    if (result.status !== 'success') {
+                        throw new Error(result.message || 'Failed to save data.');
+                    }
+                    console.log(`Successfully saved data to ${sheetName}:`, result);
+                    return result;
+                } catch (error) {
+                    console.error(`Error saving data to ${sheetName}:`, error);
+                    showError(`เกิดข้อผิดพลาดในการบันทึกข้อมูล: ${error.message}`);
+                    throw error;
+                } finally {
+                    showLoadingSpinner(false);
+                }
+            }
+            
+            // --- UI HELPER FUNCTIONS ---
+            function showLoadingSpinner(isLoading) {
+                if (saveBtn) {
+                    if (isLoading) {
+                        saveBtn.disabled = true;
+                        saveBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                        saveBtn.textContent = 'กำลังประมวลผล...';
+                    } else {
+                        saveBtn.disabled = false;
+                        saveBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                        saveBtn.textContent = 'บันทึกข้อมูล';
+                    }
+                }
+            }
+
+            function showError(message, error = null) {
+                console.error(message, error || '');
+                alert(message);
+            }
+
+            // --- INITIALIZATION ---
+            async function initializeApp() {
+                console.log("Initializing application...");
+                setupEventListeners(); // Setup listeners that don't depend on data first
+
+                showLoadingSpinner(true);
+                try {
+                    const [customerData, groupData, addressData, busTypeData] = await Promise.all([
+                        fetchData('Customers'),
+                        fetchData('CustomerGroups'),
+                        fetchData('ProvinceSB'),
+                        fetchData('BusinessType')
+                    ]);
+
+                    customers = customerData || [];
+                    customerGroups = groupData || [];
+                    provinceSBData = addressData || [];
+                    businessTypeData = busTypeData || [];
+
+                    // Process province data
+                    if (provinceSBData.length > 0) {
+                        const headers = Object.keys(provinceSBData[0]);
+                        const provinceCodeHeader = headers[0];
+                        const provinceNameHeader = headers[1];
+                        const provinceMap = new Map();
+                        provinceSBData.forEach(item => {
+                            const provinceName = item[provinceNameHeader];
+                            const provinceCode = item[provinceCodeHeader];
+                            if (provinceName && !provinceMap.has(provinceName)) {
+                                provinceMap.set(provinceName, provinceCode);
+                            }
+                        });
+                        uniqueProvinces = Array.from(provinceMap, ([name, code]) => ({ name, code }));
+                    }
+                    
+                    console.log("Loaded Customer Groups:", customerGroups);
+                    console.log("Loaded and Processed Unique Provinces:", uniqueProvinces);
+                    console.log("Loaded Business Types:", businessTypeData);
+
+                    renderCustomerTable();
+                    renderApprovalTable();
+                    
+                    const initialView = window.location.hash.substring(1) || 'customers';
+                    switchView(initialView);
+
+                } catch (error) {
+                    console.error("Initialization failed:", error);
+                    customerSection.innerHTML = `<div class="text-center py-8 text-red-500">
+                        <p>เกิดข้อผิดพลาดในการเริ่มต้นแอปพลิเคชัน</p>
+                        <p class="text-sm text-gray-500 mt-2">${error.message}</p>
+                    </div>`;
+                } finally {
+                    showLoadingSpinner(false);
+                }
+            }
+
+            // --- NAVIGATION ---
+            function switchView(view) {
+                [customerSection, approvalSection, settingsSection, dashboardSection, adminSection].forEach(section => {
+                    if (section) section.classList.add('hidden');
+                });
+
+                document.querySelectorAll('nav a').forEach(link => {
+                    link.classList.remove('active-nav');
+                    if (link.getAttribute('href') === `#${view}`) {
+                        link.classList.add('active-nav');
+                    }
+                });
+
+                let targetSection;
+                switch (view) {
+                    case 'approval': targetSection = approvalSection; break;
+                    case 'dashboard': targetSection = dashboardSection; break;
+                    case 'settings': targetSection = settingsSection; break;
+                    case 'admin': targetSection = adminSection; break;
+                    default: targetSection = customerSection; break;
+                }
+
+                if (targetSection) {
+                    targetSection.classList.remove('hidden');
+                }
+                window.location.hash = view;
+            }
+
+                        document.querySelectorAll('nav a').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const view = new URL(e.currentTarget.href).hash.substring(1);
+                    switchView(view);
+                });
+            });
+
+            // --- MODAL HANDLING ---
+            function openModal(mode, customer = null) {
+                customerForm.reset();
+                customerIdInput.value = '';
+                const modalTitle = modal.querySelector('h3');
+                
+                if (mode === 'edit' && customer) {
+                    modalTitle.textContent = 'แก้ไขข้อมูลลูกค้า';
+                    // This part needs to be implemented based on your form fields
+                    // For example:
+                    // const headers = Object.keys(customers[0] || {});
+                    // document.querySelector('[name="รหัส"]').value = customer[headers[0]];
+                } else {
+                    modalTitle.textContent = 'รายละเอียดข้อมูลลูกค้าใหม่';
+                }
+                populateCustomerGroupDropdown();
+                modal.classList.remove('hidden');
+            }
+
+            function closeModal() {
+                modal.classList.add('hidden');
+            }
+
+            // --- RENDER FUNCTIONS ---
+            function renderCustomerTable() {
+                if (!customerTableBody) return;
+
+                if (!customers || customers.length === 0) {
+                    noCustomers.classList.remove('hidden');
+                    customerTableBody.parentElement.classList.add('hidden');
+                    return;
+                }
+                noCustomers.classList.add('hidden');
+                customerTableBody.parentElement.classList.remove('hidden');
+
+                customerTableBody.innerHTML = '';
+                customers.forEach(customer => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">${customer['ชื่อ'] || ''} ${customer['นามสกุล'] || ''}</div>
+                            <div class="text-sm text-gray-500">${customer['รหัส'] || 'N/A'}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${customer['ชื่อผู้ติดต่อ'] || '-'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${customer['ตัวแทน'] || '-'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${customer['พนักงานผู้ดูแล'] || '-'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${customer.status === 'Approved' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">
+                                ${customer.status || 'Pending'}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <button class="text-indigo-600 hover:text-indigo-900">แก้ไข</button>
+                            <button class="text-red-600 hover:text-red-900 ml-4">ลบ</button>
+                        </td>
+                    `;
+                    customerTableBody.appendChild(row);
+                });
+            }
+
+            function renderApprovalTable() {
+                if (!approvalTableBody) return;
+                noApprovals.classList.remove('hidden');
+                approvalTableBody.parentElement.classList.add('hidden');
+            }
+
+            // --- DROPDOWN SETUP ---
+            function setupSearchableDropdown(inputEl, optionsContainer, getData) {
+                const populate = () => {
+                    const data = getData();
+                    const filter = inputEl.value.toLowerCase();
+                    optionsContainer.innerHTML = '';
+                    
+                    const filteredData = Array.isArray(data) ? data.filter(item => item && item.toLowerCase().includes(filter)) : [];
+                    
+                    filteredData.forEach(item => {
+                        const optionElement = document.createElement('div');
+                        optionElement.textContent = item;
+                        optionElement.classList.add('px-3', 'py-2', 'cursor-pointer', 'hover:bg-gray-100');
+                        optionElement.addEventListener('mousedown', (e) => {
+                            e.preventDefault();
+                            inputEl.value = item;
+                            optionsContainer.classList.add('hidden');
+                        });
+                        optionsContainer.appendChild(optionElement);
+                    });
+
+                    if (filteredData.length > 0) {
+                        optionsContainer.classList.remove('hidden');
+                    } else {
+                        optionsContainer.classList.add('hidden');
+                    }
+                };
+
+                inputEl.addEventListener('input', populate);
+                inputEl.addEventListener('focus', populate);
+                inputEl.addEventListener('blur', () => {
+                    setTimeout(() => optionsContainer.classList.add('hidden'), 200);
+               
+                });
+            }
+            
+            function setupInitialDropdowns() {
+                setupSearchableDropdown(
+                    customerGroupInput, 
+                    customerGroupOptions, 
+                    () => (customerGroups || []).map(g => g['ประเภทกลุ่มลูกค้า']).filter(Boolean)
+                );
+
+                setupSearchableDropdown(
+                    prefixInput, 
+                    prefixOptions, 
+                    () => (prefixes || []).map(p => p['คำนำหน้า']).filter(Boolean)
+                );
+            }
+
+                        // --- CUSTOM DROPDOWN LOGIC ---
+            function populateCustomerGroupDropdown(filter = '') {
+                customerGroupOptions.innerHTML = '';
+                console.log('Populating dropdown. Groups available:', customerGroups); // DEBUG
+                if (!customerGroups || customerGroups.length === 0) {
+                    customerGroupOptions.innerHTML = `<div class="px-3 py-2 text-gray-500">ไม่มีข้อมูลกลุ่มลูกค้า (ตรวจสอบ Console)</div>`;
+                    return;
+                }
+
+                // Dynamically get header names from the first data object.
+                // Assumes the first column is the code and the second is the name.
+                const headers = Object.keys(customerGroups[0]);
+                const codeHeader = headers[0];
+                const nameHeader = headers[1];
+
+
+
+                const filteredGroups = customerGroups.filter(group => {
+                    const code = String(group[codeHeader] || '');
+                    const name = String(group[nameHeader] || '');
+                    const filterText = filter.toLowerCase();
+                    return name.toLowerCase().includes(filterText) || code.toLowerCase().includes(filterText);
+                });
+
+                if (filteredGroups.length === 0 && filter) {
+                    const li = document.createElement('div');
+                    li.className = 'px-3 py-2 text-gray-500';
+                    li.textContent = 'ไม่พบข้อมูล, พิมพ์เพื่อเพิ่มใหม่';
+                    customerGroupOptions.appendChild(li);
+                } else {
+                    filteredGroups.forEach(group => {
+                        const li = document.createElement('div');
+                        li.className = 'px-3 py-2 hover:bg-gray-100 cursor-pointer';
+                        const code = group[codeHeader];
+                        const name = group[nameHeader];
+                        li.textContent = `${code} | ${name}`;
+                        li.dataset.value = name; // We'll put the full name in the input
+                        li.addEventListener('click', () => {
+                            customerGroupInput.value = li.dataset.value;
+                            customerGroupOptions.classList.add('hidden');
+                        });
+                        customerGroupOptions.appendChild(li);
+                    });
+                }
+            }
+
+            function populatePrefixDropdown(filter = '') {
+            prefixOptions.innerHTML = '';
+            if (!prefixes || prefixes.length === 0) {
+                return; // Don't show an error, just allow free text
+            }
+
+            const prefixHeader = Object.keys(prefixes[0])[0]; // Assumes prefix is in the first column
+
+            const filteredPrefixes = prefixes.filter(p => {
+                const prefixValue = String(p[prefixHeader] || '').toLowerCase();
+                return prefixValue.includes(filter.toLowerCase());
+            });
+
+            if (filteredPrefixes.length === 0 && filter) {
+                const li = document.createElement('div');
+                li.className = 'px-3 py-2 text-gray-500';
+                li.textContent = 'ไม่พบข้อมูล, พิมพ์เพื่อใช้ค่าใหม่';
+                prefixOptions.appendChild(li);
+            } else {
+                filteredPrefixes.forEach(p => {
+                    const li = document.createElement('div');
+                    li.className = 'px-3 py-2 hover:bg-gray-100 cursor-pointer';
+                    const prefixValue = p[prefixHeader];
+                    li.textContent = prefixValue;
+                    li.dataset.value = prefixValue;
+                    li.addEventListener('click', () => {
+                        prefixInput.value = li.dataset.value;
+                        prefixOptions.classList.add('hidden');
+                    });
+                    prefixOptions.appendChild(li);
+                });
+            }
+        }
+
+        function populateProvinceDropdown(filter = '', optionsEl) {
+            optionsEl.innerHTML = '';
+            if (!uniqueProvinces || uniqueProvinces.length === 0) {
+                optionsEl.innerHTML = `<div class="px-3 py-2 text-gray-500">ไม่มีข้อมูลจังหวัด</div>`;
+                return;
+            }
+
+            const filteredProvinces = uniqueProvinces.filter(p => 
+                p.name.toLowerCase().includes(filter.toLowerCase())
+            );
+
+            if (filteredProvinces.length === 0) {
+                optionsEl.innerHTML = `<div class="px-3 py-2 text-gray-500">ไม่พบจังหวัด</div>`;
+            }
+
+            filteredProvinces.forEach(p => {
+                const li = document.createElement('div');
+                li.className = 'px-3 py-2 hover:bg-gray-100 cursor-pointer';
+                li.textContent = p.name;
+                li.dataset.value = p.name;
+                li.dataset.code = p.code;
+
+                li.addEventListener('click', () => {
+                    const isShipping = optionsEl.id.includes('shipping');
+                    const targetProvinceInput = isShipping ? shippingProvinceInput : provinceInput;
+                    const targetDistrictInput = isShipping ? shippingDistrictInput : districtInput;
+                    const targetDistrictOptions = isShipping ? shippingDistrictOptions : districtOptions;
+
+                    targetProvinceInput.value = p.name;
+                    optionsEl.classList.add('hidden');
+                    
+                    // --- Trigger District Update ---
+                    targetDistrictInput.value = '';
+                    targetDistrictInput.disabled = false;
+                    targetDistrictInput.placeholder = 'ค้นหาเขต/อำเภอ...';
+                    targetDistrictInput.classList.remove('bg-gray-100', 'cursor-not-allowed');
+                    populateDistrictDropdown(p.name, '', targetDistrictOptions);
+                });
+                optionsEl.appendChild(li);
+            });
+        }
+
+        function populateDistrictDropdown(selectedProvinceName, filter = '', optionsEl) {
+            optionsEl.innerHTML = '';
+            const selectedProvince = uniqueProvinces.find(p => p.name === selectedProvinceName);
+            if (!selectedProvince) {
+                optionsEl.innerHTML = `<div class="px-3 py-2 text-gray-500">โปรดเลือกจังหวัดก่อน</div>`;
+                return;
+            }
+
+            // Dynamically get headers, assuming Col 1=ProvCode, Col 4=DistName
+            const headers = Object.keys(provinceSBData[0]);
+            const provinceCodeHeader = headers[0];
+            const districtNameHeader = headers[3];
+
+            const districts = provinceSBData
+                .filter(item => item[provinceCodeHeader] == selectedProvince.code && item[districtNameHeader])
+                .map(item => item[districtNameHeader])
+                .filter(name => name.toLowerCase().includes(filter.toLowerCase()));
+
+            // Get unique districts
+            const uniqueDistricts = [...new Set(districts)];
+
+            uniqueDistricts.forEach(dName => {
+                const li = document.createElement('div');
+                li.className = 'px-3 py-2 hover:bg-gray-100 cursor-pointer';
+                li.textContent = dName;
+                li.dataset.value = dName;
+                li.addEventListener('click', () => {
+                    const isShipping = optionsEl.id.includes('shipping');
+                    const targetDistrictInput = isShipping ? shippingDistrictInput : districtInput;
+
+                    targetDistrictInput.value = dName;
+                    optionsEl.classList.add('hidden');
+                });
+                optionsEl.appendChild(li);
+            });
+        }
+
+        function populateMainBusinessTypeDropdown(filter = '') {
+            mainBusinessTypeOptions.innerHTML = '';
+            if (!businessTypeData || businessTypeData.length === 0) return;
+
+            const headers = Object.keys(businessTypeData[0]);
+            const mainTypeHeader = headers[1]; // Column B
+
+            const uniqueMainTypes = [...new Set(businessTypeData.map(item => item[mainTypeHeader]).filter(Boolean))];
+
+            const filteredTypes = uniqueMainTypes.filter(type => type.toLowerCase().includes(filter.toLowerCase()));
+
+            filteredTypes.forEach(type => {
+                const li = document.createElement('div');
+                li.className = 'px-3 py-2 hover:bg-gray-100 cursor-pointer';
+                li.textContent = type;
+                li.dataset.value = type;
+                li.addEventListener('click', () => {
+                    mainBusinessTypeInput.value = type;
+                    mainBusinessTypeOptions.classList.add('hidden');
+
+                    subBusinessTypeInput.value = '';
+                    subBusinessTypeInput.disabled = false;
+                    subBusinessTypeInput.placeholder = 'ค้นหาประเภทย่อย...';
+                    subBusinessTypeInput.classList.remove('bg-gray-100', 'cursor-not-allowed');
+                    populateSubBusinessTypeDropdown(type, '');
+                });
+                mainBusinessTypeOptions.appendChild(li);
+            });
+        }
+
+        function populateSubBusinessTypeDropdown(selectedMainType, filter = '') {
+            subBusinessTypeOptions.innerHTML = '';
+            if (!businessTypeData || !selectedMainType) return;
+
+            const headers = Object.keys(businessTypeData[0]);
+            const mainTypeHeader = headers[1]; // Column B
+            const subTypeHeader = headers[4];  // Column E
+
+            const subTypes = businessTypeData
+                .filter(item => item[mainTypeHeader] === selectedMainType && item[subTypeHeader])
+                .map(item => item[subTypeHeader])
+                .filter(name => name.toLowerCase().includes(filter.toLowerCase()));
+
+            const uniqueSubTypes = [...new Set(subTypes)];
+
+            uniqueSubTypes.forEach(subType => {
+                const li = document.createElement('div');
+                li.className = 'px-3 py-2 hover:bg-gray-100 cursor-pointer';
+                li.textContent = subType;
+                li.dataset.value = subType;
+                li.addEventListener('click', () => {
+                    subBusinessTypeInput.value = subType;
+                    subBusinessTypeOptions.classList.add('hidden');
+                });
+                subBusinessTypeOptions.appendChild(li);
+            });
+        }
+
+        customerGroupInput.addEventListener('focus', () => {
+            populateCustomerGroupDropdown(customerGroupInput.value);
+            customerGroupOptions.classList.remove('hidden');
+        });
+
+        customerGroupInput.addEventListener('input', () => {
+            populateCustomerGroupDropdown(customerGroupInput.value);
+            customerGroupOptions.classList.remove('hidden');
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!customerGroupDropdown.contains(e.target)) {
+                customerGroupOptions.classList.add('hidden');
+            }
+            if (prefixDropdown && !prefixDropdown.contains(e.target)) {
+                prefixOptions.classList.add('hidden');
+            }
+            if (!provinceInput.parentElement.contains(e.target)) {
+                provinceOptions.classList.add('hidden');
+            }
+            if (!districtInput.parentElement.contains(e.target)) {
+                districtOptions.classList.add('hidden');
+            }
+            if (!shippingProvinceInput.parentElement.contains(e.target)) {
+                shippingProvinceOptions.classList.add('hidden');
+            }
+            if (!shippingDistrictInput.parentElement.contains(e.target)) {
+                shippingDistrictOptions.classList.add('hidden');
+            }
+            if (!mainBusinessTypeInput.parentElement.contains(e.target)) {
+                mainBusinessTypeOptions.classList.add('hidden');
+            }
+            if (!subBusinessTypeInput.parentElement.contains(e.target)) {
+                subBusinessTypeOptions.classList.add('hidden');
+            }
+        });
+
+        prefixInput.addEventListener('focus', () => {
+            populatePrefixDropdown(prefixInput.value);
+            prefixOptions.classList.remove('hidden');
+        });
+
+        prefixInput.addEventListener('input', () => {
+            populatePrefixDropdown(prefixInput.value);
+            prefixOptions.classList.remove('hidden');
+        });
+
+        provinceInput.addEventListener('focus', () => {
+            populateProvinceDropdown(provinceInput.value, provinceOptions);
+            provinceOptions.classList.remove('hidden');
+        });
+        provinceInput.addEventListener('input', () => {
+            populateProvinceDropdown(provinceInput.value, provinceOptions);
+            provinceOptions.classList.remove('hidden');
+        });
+
+        districtInput.addEventListener('focus', () => {
+            populateDistrictDropdown(provinceInput.value, districtInput.value, districtOptions);
+            districtOptions.classList.remove('hidden');
+        });
+        districtInput.addEventListener('input', () => {
+            populateDistrictDropdown(provinceInput.value, districtInput.value, districtOptions);
+            districtOptions.classList.remove('hidden');
+        });
+
+        // Shipping Address Listeners
+        shippingProvinceInput.addEventListener('focus', () => {
+            populateProvinceDropdown(shippingProvinceInput.value, shippingProvinceOptions);
+            shippingProvinceOptions.classList.remove('hidden');
+        });
+        shippingProvinceInput.addEventListener('input', () => {
+            populateProvinceDropdown(shippingProvinceInput.value, shippingProvinceOptions);
+            shippingProvinceOptions.classList.remove('hidden');
+        });
+
+        shippingDistrictInput.addEventListener('focus', () => {
+            populateDistrictDropdown(shippingProvinceInput.value, shippingDistrictInput.value, shippingDistrictOptions);
+            shippingDistrictOptions.classList.remove('hidden');
+        });
+        shippingDistrictInput.addEventListener('input', () => {
+            populateDistrictDropdown(shippingProvinceInput.value, shippingDistrictInput.value, shippingDistrictOptions);
+            shippingDistrictOptions.classList.remove('hidden');
+        });
+
+        // Business Type Listeners
+        mainBusinessTypeInput.addEventListener('focus', () => {
+            populateMainBusinessTypeDropdown(mainBusinessTypeInput.value);
+            mainBusinessTypeOptions.classList.remove('hidden');
+        });
+        mainBusinessTypeInput.addEventListener('input', () => {
+            populateMainBusinessTypeDropdown(mainBusinessTypeInput.value);
+            mainBusinessTypeOptions.classList.remove('hidden');
+        });
+
+        subBusinessTypeInput.addEventListener('focus', () => {
+            populateSubBusinessTypeDropdown(mainBusinessTypeInput.value, subBusinessTypeInput.value);
+            subBusinessTypeOptions.classList.remove('hidden');
+        });
+        subBusinessTypeInput.addEventListener('input', () => {
+            populateSubBusinessTypeDropdown(mainBusinessTypeInput.value, subBusinessTypeInput.value);
+            subBusinessTypeOptions.classList.remove('hidden');
+        });
+
+
+            // --- EVENT LISTENERS ---
+            function setupEventListeners() {
+                modalCloseBtns.forEach(btn => btn.addEventListener('click', () => modal.classList.add('hidden')));
+                
+                document.getElementById('add-customer-btn').addEventListener('click', () => {
+                    customerForm.reset();
+                    customerIdInput.value = '';
+                    modal.classList.remove('hidden');
+                    
+                    const defaultCheckedRadio = document.querySelector('input[name="customerType"]:checked');
+                    if (defaultCheckedRadio) {
+                        handleCustomerTypeChange({ target: defaultCheckedRadio });
+                    }
+                });
+
+                window.addEventListener('hashchange', () => {
+                    const view = window.location.hash.substring(1) || 'customers';
+                    switchView(view);
+                });
+
+                const customerTypeRadios = document.querySelectorAll('input[name="customerType"]');
+                customerTypeRadios.forEach(radio => {
+                    radio.addEventListener('change', handleCustomerTypeChange);
+                });
+            }
+
+            async function handleCustomerTypeChange(event) {
+                const selectedType = event.target.value;
+                
+                // --- NEW: Handle Name Fields ---
+                const firstNameContainer = document.getElementById('firstNameContainer');
+                const firstNameLabel = document.getElementById('firstNameLabel');
+                const lastNameContainer = document.getElementById('lastNameContainer');
+                const lastNameInput = document.getElementById('lastName');
+
+                if (selectedType === 'corporate') {
+                    firstNameLabel.innerHTML = 'ชื่อนิติบุคคล <span class="text-red-500">*</span>';
+                    firstNameContainer.classList.remove('md:col-span-1');
+                    firstNameContainer.classList.add('md:col-span-2');
+                    lastNameContainer.classList.add('hidden');
+                    lastNameInput.value = ''; // Clear last name value
+                } else { // 'personal'
+                    firstNameLabel.innerHTML = 'ชื่อ <span class="text-red-500">*</span>';
+                    firstNameContainer.classList.remove('md:col-span-2');
+                    firstNameContainer.classList.add('md:col-span-1');
+                    lastNameContainer.classList.remove('hidden');
+                }
+                // --- END NEW ---
+
+                prefixInput.value = '';
+                prefixInput.disabled = true;
+                prefixInput.placeholder = 'กำลังโหลด...';
+                prefixInput.classList.add('bg-gray-100', 'cursor-not-allowed');
+                prefixOptions.innerHTML = '';
+
+                const sheetName = selectedType === 'personal' ? 'PrefixPerson' : 'PrefixCorporate';
+
+                try {
+                    showLoadingSpinner(true);
+                    prefixes = await fetchData(sheetName);
+                    
+                    prefixInput.disabled = false;
+                    prefixInput.placeholder = 'ค้นหาหรือพิมพ์ใหม่...';
+                    prefixInput.classList.remove('bg-gray-100', 'cursor-not-allowed');
+                    
+                    if (document.activeElement === prefixInput) {
+                        prefixInput.dispatchEvent(new Event('input'));
+                    }
+
+                } catch (error) {
+                    console.error(`Failed to load prefixes for ${selectedType}:`, error);
+                    prefixInput.placeholder = 'โหลดข้อมูลล้มเหลว';
+                    prefixes = [];
+                } finally {
+                    showLoadingSpinner(false);
+                }
+            }
+
+            // --- START ---
+            initializeApp();
+        });
+    </script>
+</body>
+</html>
